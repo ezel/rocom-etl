@@ -26,8 +26,11 @@ class ETLer():
 
         self.extract_skills()
         self.transform_skills()
+
+        # extract dictionary
+        self.extract_type_dict()
+        self.transform_type_dict()
         
-        #self.export()
 
     def extract_handbook_pets(self, fn='PET_HANDBOOK'):
         with open(self.root+fn+'.json') as f:
@@ -182,32 +185,18 @@ class ETLer():
                     row = [ v['id'], v['name'], v['desc'],
                             v["energy_cost"][0],
                             v["dam_para"][0],
-                            v["type"],
                             v["skill_dam_type"],
                             v["skill_feature"],
                             v["damage_type"],
                             v["contact_type"],
                             v["skill_priority"],
-                            v["target_type"],
-                            v["target_count"],
-                            v["cd_round"],
-                            v["hit_para"],
+                            v["target_type"]
                            ]
                     ret1.append(row)
 
                 elif v['id'] in self.filterIdx['abilities']:
                     row = [ v['id'], v['name'], v['desc'],
-                            v["energy_cost"][0],
-                            v["dam_para"][0],
-                            v["type"],
-                            v["skill_dam_type"],
-                            v["damage_type"],
-                            v["contact_type"],
-                            v["skill_priority"],
                             v["target_type"],
-                            v["target_count"],
-                            v["cd_round"],
-                            v["hit_para"],
                            ]
                     ret2.append(row)
 
@@ -218,26 +207,72 @@ class ETLer():
 
     def transform_skills(self):
         self.schema['skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS skill (skid INTEGER PRIMARY KEY,name TEXT NOT NULL,desc TEXT NOT NULL,energy INTEGER NOT NULL,dam_para INTEGER,type INTEGER,sk_damage_type INTEGER,sk_feature INTEGER,damage_type INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER,target_count INTEGER,cd_round TEXT,hit_para INTEGER)",
-            'dml' : "INSERT INTO skill (skid,name,desc,energy,dam_para,type,sk_damage_type,sk_feature,damage_type,concat_type,skill_priority,target_type,target_count,cd_round,hit_para) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill (skid INTEGER PRIMARY KEY,name TEXT NOT NULL,desc TEXT NOT NULL,energy INTEGER NOT NULL,dam_para INTEGER,sk_damage_type INTEGER,sk_feature INTEGER,damage_type INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER)",
+            'dml' : "INSERT INTO skill (skid,name,desc,energy,dam_para,sk_damage_type,sk_feature,damage_type,concat_type,skill_priority,target_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS skill",
             'data': [(r[0],r[1],r[2],r[3],
                       r[4],r[5],r[6],r[7],
-                      r[8],r[9],r[10],r[11],
-                      r[12],str(r[13]),r[14]) for r in self.raw['skills']],
+                      r[8],r[9],r[10]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS ability (skid INTEGER PRIMARY KEY,name TEXT NOT NULL,desc TEXT NOT NULL,energy INTEGER NOT NULL,dam_para INTEGER,type INTEGER,sk_damage_type INTEGER,damage_type INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER,target_count INTEGER,cd_round TEXT,hit_para INTEGER)",
-            'dml' : "INSERT INTO ability (skid,name,desc,energy,dam_para,type,sk_damage_type,damage_type,concat_type,skill_priority,target_type,target_count,cd_round,hit_para) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS ability (skid INTEGER PRIMARY KEY,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER)",
+            'dml' : "INSERT INTO ability (skid,name,desc,target_type) VALUES (?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
-            'data': [(r[0],r[1],r[2],r[3],
-                      r[4],r[5],r[6],r[7],
-                      r[8],r[9],r[10],r[11],
-                      str(r[12]),r[13]) for r in self.raw['abilities']],
+            'data': [(r[0],r[1],
+                      r[2],r[3]) for r in self.raw['abilities']],
         }
 
+    def extract_type_dict(self, fn1='TYPE_DICTIONARY', fn2='SKILL_COLOR_CONF'):
+        ret_kv = {}
+        with open(self.root+fn1+'.json') as f:
+            rows = json.loads(f.read())['RocoDataRows']
 
-    def export(self, path="rocom.db"):
+            for k, v in rows.items():
+                item = [ v['id'], v['type_name'], v['short_name'],
+                         v.get('evo_banding_color', None),
+                         v.get("rolecard_favorite_pets_colour", None)
+                       ]
+                ret_kv[v['id']] = item
+
+        with open(self.root+fn2+'.json') as f:
+            rows = json.loads(f.read())['RocoDataRows']
+
+            for k, v in rows.items():
+                item = [ v.get('color', None), v.get("perform_light_colour", None)]
+                if v['unit_type'] in ret_kv:
+                    ret_kv[v['unit_type']].extend(item)
+
+        self.raw['type_dictionary'] = list(ret_kv.values())
+
+        return len(ret_kv)
+
+    def transform_type_dict(self):
+        self.schema['dict_type'] = {
+            'ddl' : "CREATE TABLE IF NOT EXISTS dict_type (cid INTEGER PRIMARY KEY,name TEXT NOT NULL,sname TEXT NOT NULL, ebc TEXT, rfc TEXT,scolor TEXT, plc TEXT)",
+            'dml' : "INSERT INTO dict_type (cid, name, sname, ebc, rfc, scolor, plc) VALUES (?,?,?,?,?,?,?)",
+            'clean': "DROP TABLE IF EXISTS dict_type",
+            'data': [(r[0],r[1],r[2],r[3],r[4],
+                      r[5] if 5 in r else None, r[6] if 6 in r else None)
+                     for r in self.raw['type_dictionary']]
+        }
+
+    def export_color_html(self, path='type_color.html'):
+        tr_rows = []
+
+        for rtype in self.schema['dict_type']['data']:
+            print(rtype)
+            tds = [f'<td style="background-color: {x}">{x}</td>' for x in rtype[3:] if x is not None]
+            print(tds)
+            tr_rows.append(f'<tr><th>{rtype[1]}</th>{"".join(tds)}</tr>')
+            
+
+        with open(path, 'w') as f:
+            f.write('<html><body><table>')
+            f.write("".join(tr_rows))
+            f.write('</table></body></html>')
+        
+
+    def load_sqlite(self, path="rocom.db"):
         def batch_create_and_insert(cursor, schema):
             cursor.execute(schema['clean'])
             cursor.execute(schema['ddl'])
@@ -281,5 +316,8 @@ class ETLer():
             if type(self.raw[k]) == type([]):
                 print(self.raw[k][0])
 
+        print("exporting color.html...")
+        self.export_color_html()
+        
         print("exporting database...")
-        self.export()
+        self.load_sqlite()

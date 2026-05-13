@@ -5,4 +5,5 @@ FILE_PATH = 'rat/public/data/BinData/'
 
 e = ETLer(root=FILE_PATH)
 
-e.test()
+e.export_color_html()
+e.load_sqlite()

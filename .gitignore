@@ -1,7 +1,9 @@
 # dependence git project
 rat/
-# out put database
+# output files
 *.db
+*.html
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
