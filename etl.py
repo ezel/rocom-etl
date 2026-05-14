@@ -260,9 +260,9 @@ class ETLer():
         tr_rows = []
 
         for rtype in self.schema['dict_type']['data']:
-            print(rtype)
+            #print(rtype)
             tds = [f'<td style="background-color: {x}">{x}</td>' for x in rtype[3:] if x is not None]
-            print(tds)
+            #print(tds)
             tr_rows.append(f'<tr><th>{rtype[1]}</th>{"".join(tds)}</tr>')
             
 
