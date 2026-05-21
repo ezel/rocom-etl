@@ -65,10 +65,10 @@ class ETLer():
             return len(ret)
 
     def transform_handbook_pets(self):
-        self.schema['pets_handbook'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pets_handbook (hid INTEGER PRIMARY KEY,name TEXT NOT NULL,forms_count INTEGER, pid_raw TEXT)",
-            'dml' : "INSERT INTO pets_handbook (hid,name,forms_count,pid_raw) VALUES (?, ?, ?, ?)",
-            'clean': "DROP TABLE IF EXISTS pets_handbook",
+        self.schema['pet_handbook'] = {
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_handbook (hid INTEGER PRIMARY KEY,name TEXT NOT NULL,forms_count INTEGER, pid_raw TEXT)",
+            'dml' : "INSERT INTO pet_handbook (hid,name,forms_count,pid_raw) VALUES (?, ?, ?, ?)",
+            'clean': "DROP TABLE IF EXISTS pet_handbook",
             'data': [(r[0], r[1], r[2], str(r[3])) for r in self.raw['handbook_pets']]
         }
         
@@ -81,6 +81,8 @@ class ETLer():
             
             for k, v in rows.items():
                 if v['id'] in self.filterIdx['handbook_pets_pids']:
+                    if 'hp_max_race' not in v:
+                        continue
                     filter_ret_set.add(v['pet_feature'])
                     row = [ v['id'], v['name'],
                             v["pet_feature"],
@@ -97,7 +99,6 @@ class ETLer():
                             v.get("SUM_race", 0),
                             self.raw['pid_ri'][v['id']],
                             v.get("egg_group", None),
-                            v.get("pet_evolution_id", None),
                             v.get("evolution_pet_id", None),
                            ]
                     ret.append(row)
@@ -108,12 +109,12 @@ class ETLer():
 
     def transform_petbase(self):
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pets_base (pid INTEGER PRIMARY KEY,name TEXT NOT NULL,feature INTEGER,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER,form TEXT,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER,hid INTEGER, egg TEXT,pei_raw TEXT,epi_raw TEXT)",
-            'dml' : "INSERT INTO pets_base (pid,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,pei_raw,epi_raw) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            'clean': "DROP TABLE IF EXISTS pets_base",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (pid INTEGER PRIMARY KEY,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER,hid INTEGER NOT NULL, egg TEXT,evolution TEXT)",
+            'dml' : "INSERT INTO pet_base (pid,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'clean': "DROP TABLE IF EXISTS pet_base",
             'data': [(r[0],r[1],r[2],r[3][0],r[3][1] if len(r[3])>1 else None,
                       r[4],r[5],r[6],str(r[7]),r[8],str(r[9]),
-                      r[10],r[11],r[12],r[13], str(r[14]),str(r[15]), str(r[16])) for r in self.raw['petbase']],
+                      r[10],r[11],r[12],r[13], str(r[14]),str(r[15])) for r in self.raw['petbase']],
         }
 
     def extract_level_skills(self, fn='LEVEL_SKILL_CONF'):
