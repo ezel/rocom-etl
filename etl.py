@@ -130,11 +130,11 @@ class ETLer():
                     if 'level' not in v:
                         continue
                     if len(v['level']) > 0:
-                        rLevel = [(r['param'], r['level_point'],) for r in v['level']]
-                        [filter_ret_set.add(x) for x in rLevel]
+                        rLevel = tuple([(r['param'], r['level_point'],) for r in v['level']])
+                        [filter_ret_set.add(x[0]) for x in rLevel]
                     if len(v['machine_skill_group']) > 0:
-                        rMachine = tuple([r['machine_skill_id'] for r in v['machine_skill_group']])
-                        [filter_ret_set.add(x) for x in rMachine]
+                        rMachine = tuple([(r['machine_skill_id'], r['machine_skill_name'],) for r in v['machine_skill_group']])
+                        [filter_ret_set.add(x[0]) for x in rMachine]
 
                     rBlood = [
                         v["blood_skill_COMMON"], v["blood_skill_GRASS"], v["blood_skill_FIRE"],
@@ -161,7 +161,7 @@ class ETLer():
             for x in r[1]:
                 data.append([id, x[0], 1, x[1]])
             for x in r[2]:
-                data.append([id, x, 2, None])
+                data.append([id, x[0], 2, x[1]])
             for i in range(len(r[3])):
                 data.append([id, r[3][i], 3, i])
             
