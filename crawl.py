@@ -185,18 +185,23 @@ class BiliCrawler():
         self.raw['petsTable'] = petsWithId
 
     def transform_pet(self):
-        # type1, type2 to integer
-        # stage_type to int
-        # form extract
+        def extract_name(name):
+            ret = name.replace('）','').split('（')
+            if len(ret) > 1:
+                return ret
+            else:
+                return [name, None]
 
         self.schema['bili_pet'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,feature TEXT NOT NULL,type1 TEXT NOT NULL,type2 TEXT,stage_type TEXT NOT NULL,form TEXT, form_type TEXT,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, icon_path TEXT NOT NULL, link TEXT NOT NULL, version TEXT, version_id INTEGER)",
-            'dml' : "INSERT INTO bili_pet_base (id, icon_path, name, type1, type2, hid, feature, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form_type, stage_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,feature TEXT NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage_type INTEGER NOT NULL,form TEXT, form_type INTEGER,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, icon_path TEXT NOT NULL, link TEXT NOT NULL, version TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO bili_pet_base (id, icon_path, name, form, type1, type2, hid, feature, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form_type, stage_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_pet_base",
-            'data': [(r[0],r[1],r[2],r[3],r[4],
+            'data': [(r[0],r[1],*extract_name(r[2]),
+                      self.dic['type'].get(r[3]),self.dic['type'].get(r[4]),
                       r[5],r[6],r[7],r[8],
                       r[9],r[10],r[11],r[12],
-                      r[13],r[14],r[15],r[16],r[17]) for r in self.raw['petsTable']],
+                      r[13],r[14],r[15],
+                      self.dic['form_type'].get(r[16]),self.dic['stage_type'].get(r[17])) for r in self.raw['petsTable']],
         }
 
     def fetch_pet_detail(self, url, pkey):
