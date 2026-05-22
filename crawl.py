@@ -1,33 +1,51 @@
 import requests
 from bs4 import BeautifulSoup
 import sqlite3
+import pickle
 
 class BiliCrawler():
-    def __init__(self):
+    def __init__(self, filename=None):
         self.URL_BASE = "https://wiki.biligame.com"
+        self.filename = filename
+
         self.raw = {}
         self.schema = {}
 
-    def fetch_data(self):
-        # fetch 2 tables
+    def fetch_data(self, forceFetch=False):
+        self.fromFile()
+        if forceFetch or self.raw == {}:
+            # fetch 2 tables
+            self.fetch_skill_table()
+            self.fetch_pet_table()
 
-        #self.fetch_skill_table()
-        #self.transform_skill()
-        
-        self.fetch_pet_table()
-        #self.transform_pet()
-        
-        # fetch pet detail
-        self.raw['petskillsList'] = []
-        for rawPet in self.raw['petsTable']:
-            url = self.URL_BASE+rawPet[15]
-            rawKey = rawPet[0]
-            if rawKey > 3:
-                break
-            self.fetch_pet_detail(url, rawKey)
-            
+            # fetch pet detail
+            self.raw['petskillsList'] = []
+            for rawPet in self.raw['petsTable']:
+                url = self.URL_BASE+rawPet[15]
+                rawKey = rawPet[0]
+                if rawKey > 3:
+                    break
+                self.fetch_pet_detail(url, rawKey)
+
+        self.transform_skill()
+        self.transform_pet()            
         self.transform_petskill()
 
+    def toFile(self):
+        filename = self.filename
+        if filename:
+            with open(filename, 'wb' ) as f :
+                pickle.dump(self.raw, f, protocol=pickle.HIGHEST_PROTOCOL)
+                print('pickle self.raw to file:', filename)
+
+    def fromFile(self):
+        if self.filename:
+            try:
+                with open(self.filename, 'rb' ) as f:
+                    self.raw = pickle.load(f)
+            except FileNotFoundError:
+                pass
+        
     def _request(self, url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0',
@@ -81,7 +99,7 @@ class BiliCrawler():
 
     def fetch_skill_table(self):
         # skills list of
-        # ['icon_src', 'name', 'type', 'damage_type'
+        # ['icon_src', 'name', 'type', 'skill_type'
         #  'damage_type', 'energy, 'damage', 'desp', 'version'
         #  'href']
         url = "https://wiki.biligame.com/rocom/%E6%8A%80%E8%83%BD%E7%AD%9B%E9%80%89"
@@ -110,8 +128,11 @@ class BiliCrawler():
         self.raw['skillsTable'] = skills
 
     def transform_skill(self):
+        # damage_type to integer
+        # skill_type to integer
+        
         self.schema['bili_skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, desc TEXT NOT NULL, damage_type TEXT NOT NULL, skill_type TEXT NOT NULL, energy INTEGER NOT NULL, damage INTEGER NOT NULL,icon_path TEXT NOT NULL,link TEXT NOT NULL, version TEXT )",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, desc TEXT NOT NULL, skill_type TEXT NOT NULL, damage_type TEXT NOT NULL, energy INTEGER NOT NULL, damage INTEGER NOT NULL,icon_path TEXT NOT NULL,link TEXT NOT NULL, version TEXT, version_id INTEGER)",
             'dml' : "INSERT INTO bili_skill (icon_path, name, damage_type, skill_type, energy, damage, desc, version, link) VALUES (?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_skill",
             'data': [(r[0],r[1],r[2],r[3],
@@ -166,9 +187,13 @@ class BiliCrawler():
         self.raw['petsTable'] = petsWithId
 
     def transform_pet(self):
+        # type1, type2 to integer
+        # stage_type to int
+        # form extract
+
         self.schema['bili_pet'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,ability TEXT NOT NULL,type1 TEXT NOT NULL,type2 TEXT,stage TEXT NOT NULL,form TEXT,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, icon_path TEXT NOT NULL, link TEXT NOT NULL, version TEXT)",
-            'dml' : "INSERT INTO bili_pet_base (id, icon_path, name, type1, type2, hid, ability, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form, stage) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,feature TEXT NOT NULL,type1 TEXT NOT NULL,type2 TEXT,stage_type TEXT NOT NULL,form TEXT, form_type TEXT,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, icon_path TEXT NOT NULL, link TEXT NOT NULL, version TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO bili_pet_base (id, icon_path, name, type1, type2, hid, feature, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form_type, stage_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_pet_base",
             'data': [(r[0],r[1],r[2],r[3],r[4],
                       r[5],r[6],r[7],r[8],
@@ -199,13 +224,16 @@ class BiliCrawler():
 
 
     def transform_petskill(self):
+        # find skid
+        # category to type
+        
         self.schema['bili_pets_skills'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pets_skills (pid INTEGER NOT NULL,skill_name TEXT NOT NULL,category TEXT NOT NULL, info TEXT)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pets_skills (pid INTEGER NOT NULL,skid INTEGER,skill_name TEXT NOT NULL,type INTEGER, category TEXT NOT NULL, info TEXT, version_id INTEGER)",
             'dml' : "INSERT INTO bili_pets_skills (pid, skill_name, category, info) VALUES (?, ?, ?, ?)",
             'clean': "DROP TABLE IF EXISTS bili_pets_skills",
             'data': tuple(self.raw['petskillsList'])
         }
-        
+
     
     def load_sqlite(self, path="rocom.db"):
         def batch_create_and_insert(cursor, schema):
@@ -252,3 +280,4 @@ class BiliCrawler():
         print('EXPORTED TO DATABASE')
         self.load_sqlite()
 
+        self.toFile()

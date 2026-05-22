@@ -8,5 +8,5 @@ e = ETLer(root=FILE_PATH)
 e.export_color_html()
 e.load_sqlite()
 
-c = BiliCrawler()
+c = BiliCrawler('data/a.pkl')
 c.test()

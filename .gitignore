@@ -1,5 +1,6 @@
 # dependence git project
 rat/
+data/
 # output files
 *.db
 *.html
