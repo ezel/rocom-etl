@@ -10,6 +10,7 @@ class BiliCrawler():
 
         self.raw = {}
         self.schema = {}
+        self.dic = {'type':{'普通':2,'草':3,'火':4,'水':5,'光':6,'地':8,'冰':9,'龙':10,'电':11,'毒':12,'虫':13,'武':14,'翼':15,'萌':16,'幽':17,'恶':18,'机械':19,'幻':20}, 'stage_type':{'最终形态':10,'Ⅱ阶':2,'Ⅰ阶':1},'form_type':{'原始形态':1,'首领形态':3,'地区形态':2},'category':{'精灵技能':1,'血脉技能':3,'可学技能石':2},'skill_type':{'魔攻':2,'物攻':1,'状态':3,'防御':4}}
 
     def fetch_data(self, forceFetch=False):
         self.fromFile()
@@ -28,7 +29,7 @@ class BiliCrawler():
                 self.fetch_pet_detail(url, rawKey)
 
         self.transform_skill()
-        self.transform_pet()            
+        self.transform_pet()
         self.transform_petskill()
 
     def toFile(self):
@@ -45,7 +46,7 @@ class BiliCrawler():
                     self.raw = pickle.load(f)
             except FileNotFoundError:
                 pass
-        
+
     def _request(self, url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0',
@@ -82,7 +83,7 @@ class BiliCrawler():
         soup = BeautifulSoup(html_doc, 'lxml')
         boxSoup = soup.find('div', id='CardSelectTr')
         skillsSoup = boxSoup.find_all('div', class_='divsort')
-    
+
         skills = []
         for s in skillsSoup:
             sa = s.find('a')
@@ -94,7 +95,7 @@ class BiliCrawler():
                 s.find('img', class_='rocom_skill_bg_img').attrs['src']
             ]
             skills.append(row)
-    
+
         self.row['skillsList'] = skills
 
     def fetch_skill_table(self):
@@ -107,7 +108,7 @@ class BiliCrawler():
         soup = self._request(url)
         boxSoup = soup.find('table', id='CardSelectTr')
         skillsSoup = boxSoup.find_all('tr')[1:]
-    
+
         skills = []
         for s in skillsSoup:
             tds = s.find_all('td')
@@ -124,22 +125,19 @@ class BiliCrawler():
                 s.find('a').attrs['href']
             ]
             skills.append(tuple(row))
-        
+
         self.raw['skillsTable'] = skills
 
     def transform_skill(self):
-        # damage_type to integer
-        # skill_type to integer
-        
         self.schema['bili_skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, desc TEXT NOT NULL, skill_type TEXT NOT NULL, damage_type TEXT NOT NULL, energy INTEGER NOT NULL, damage INTEGER NOT NULL,icon_path TEXT NOT NULL,link TEXT NOT NULL, version TEXT, version_id INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, desc TEXT NOT NULL, skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL, damage INTEGER NOT NULL,icon_path TEXT NOT NULL,link TEXT NOT NULL, version TEXT, version_id INTEGER)",
             'dml' : "INSERT INTO bili_skill (icon_path, name, damage_type, skill_type, energy, damage, desc, version, link) VALUES (?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_skill",
-            'data': [(r[0],r[1],r[2],r[3],
+            'data': [(r[0],r[1],self.dic['type'].get(r[2]),self.dic['skill_type'].get(r[3]),
                       r[4],r[5],r[6],r[7],r[8]) for r in self.raw['skillsTable']],
         }
 
-        
+
     def fetch_pet_table(self):
         # pets list of
         # ['icon_src', 'name', 'types', 'petid', 'ability',
@@ -150,7 +148,7 @@ class BiliCrawler():
         soup = self._request(url)
         boxSoup = soup.find('table', id='CardSelectTr')
         petsSoup = boxSoup.find_all('tr')[1:]
-    
+
         pets = []
         for s in petsSoup:
             tds = s.find_all('td')
@@ -176,13 +174,13 @@ class BiliCrawler():
                 tds[9].text.strip(),
                 tds[10].text.strip(),
                 tds[11].text.strip(),
-                tds[12].text.strip(),                
+                tds[12].text.strip(),
                 s.find('a').attrs['href'],
                 s.attrs['data-param3'],
                 s.attrs['data-param1']
             ]
             pets.append(row)
-        
+
         petsWithId = [[i + 1] + row for i, row in enumerate(pets)]
         self.raw['petsTable'] = petsWithId
 
@@ -200,10 +198,10 @@ class BiliCrawler():
                       r[9],r[10],r[11],r[12],
                       r[13],r[14],r[15],r[16],r[17]) for r in self.raw['petsTable']],
         }
-        
+
     def fetch_pet_detail(self, url, pkey):
         # pet detail list of
-        
+
         print("fetching data of pet... :", url)
         soup = self._request(url)
         boxSoup = soup.find('div', class_='rocom_sprite_skill_tabBox')
@@ -218,15 +216,15 @@ class BiliCrawler():
                 s.find('div', class_='rocom_sprite_skillName').text.strip(),
                 categoryStr,
                 s.find('div', class_='rocom_sprite_skill_level').text.strip()
-                 ) for s in skillBox]
+            ) for s in skillBox]
             allPetSkills.extend(row)
-        self.raw['petskillsList'].extend(allPetSkills)
+            self.raw['petskillsList'].extend(allPetSkills)
 
 
     def transform_petskill(self):
         # find skid
         # category to type
-        
+
         self.schema['bili_pets_skills'] = {
             'ddl' : "CREATE TABLE IF NOT EXISTS bili_pets_skills (pid INTEGER NOT NULL,skid INTEGER,skill_name TEXT NOT NULL,type INTEGER, category TEXT NOT NULL, info TEXT, version_id INTEGER)",
             'dml' : "INSERT INTO bili_pets_skills (pid, skill_name, category, info) VALUES (?, ?, ?, ?)",
@@ -234,7 +232,7 @@ class BiliCrawler():
             'data': tuple(self.raw['petskillsList'])
         }
 
-    
+
     def load_sqlite(self, path="rocom.db"):
         def batch_create_and_insert(cursor, schema):
             cursor.execute(schema['clean'])
@@ -243,7 +241,7 @@ class BiliCrawler():
                 schema['dml'],
                 schema['data']
             )
-            
+
         try:
             conn = sqlite3.connect(path)
             cursor = conn.cursor()
@@ -253,14 +251,14 @@ class BiliCrawler():
                     batch_create_and_insert(cursor, v)
                     conn.commit()
                     print(f"table {k} exported succeed!")
-                    
+
                 except sqlite3.Error as e:
                     print(f"create data table {k} error: {e}")
                     conn.rollback()
 
         except sqlite3.Error as e:
             print(f"database error: {e}")
-            
+
         finally:
             cursor.close()
             conn.close()
