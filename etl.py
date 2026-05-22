@@ -208,8 +208,8 @@ class ETLer():
 
     def transform_skills(self):
         self.schema['skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS skill (skid INTEGER PRIMARY KEY,name TEXT NOT NULL,desc TEXT NOT NULL,energy INTEGER NOT NULL,dam_para INTEGER,sk_damage_type INTEGER,sk_feature INTEGER,damage_type INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER)",
-            'dml' : "INSERT INTO skill (skid,name,desc,energy,dam_para,sk_damage_type,sk_feature,damage_type,concat_type,skill_priority,target_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT, skid INTEGER NOT NULL,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,sk_feature INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER, version_id INTEGER)",
+            'dml' : "INSERT INTO skill (skid,name,desc,energy,damage,damage_type,sk_feature,skill_type,concat_type,skill_priority,target_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS skill",
             'data': [(r[0],r[1],r[2],r[3],
                       r[4],r[5],r[6],r[7],
