@@ -109,7 +109,7 @@ class ETLer():
 
     def transform_petbase(self):
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg TEXT,evolution TEXT)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg TEXT,evolution TEXT, version_id INTEGER)",
             'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_base",
             'data': [(r[0],r[1],r[2],r[3][0],r[3][1] if len(r[3])>1 else None,
@@ -167,7 +167,7 @@ class ETLer():
                 data.append([id, r[3][i], 3, i])
             
         self.schema['pets_skills'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pets_skills (pid INTEGER NOT NULL,skid INTEGER NOT NULL,type INTEGER NOT NULL, info INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pets_skills (pid INTEGER NOT NULL,skid INTEGER NOT NULL,type INTEGER NOT NULL, info INTEGER, version_id INTEGER)",
             'dml' : "INSERT INTO pets_skills (pid, skid, type, info) VALUES (?, ?, ?, ?)",
             'clean': "DROP TABLE IF EXISTS pets_skills",
             'data': tuple(data)
@@ -216,7 +216,7 @@ class ETLer():
                       r[8],r[9],r[10]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER, version_id INTEGER)",
             'dml' : "INSERT INTO ability (id,name,desc,target_type) VALUES (?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
