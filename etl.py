@@ -216,7 +216,7 @@ class ETLer():
                       r[8],r[9],r[10]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS ability (skid INTEGER PRIMARY KEY,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT, skid INTEGER NOT NULL,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER)",
             'dml' : "INSERT INTO ability (skid,name,desc,target_type) VALUES (?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
