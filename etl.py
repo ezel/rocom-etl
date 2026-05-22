@@ -208,16 +208,16 @@ class ETLer():
 
     def transform_skills(self):
         self.schema['skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT, skid INTEGER NOT NULL,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,sk_feature INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER, version_id INTEGER)",
-            'dml' : "INSERT INTO skill (skid,name,desc,energy,damage,damage_type,sk_feature,skill_type,concat_type,skill_priority,target_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,sk_feature INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER, version_id INTEGER)",
+            'dml' : "INSERT INTO skill (id,name,desc,energy,damage,damage_type,sk_feature,skill_type,concat_type,skill_priority,target_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS skill",
             'data': [(r[0],r[1],r[2],r[3],
                       r[4],r[5],r[6],r[7],
                       r[8],r[9],r[10]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT, skid INTEGER NOT NULL,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER)",
-            'dml' : "INSERT INTO ability (skid,name,desc,target_type) VALUES (?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER)",
+            'dml' : "INSERT INTO ability (id,name,desc,target_type) VALUES (?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
                       r[2],r[3]) for r in self.raw['abilities']],
