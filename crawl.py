@@ -7,18 +7,52 @@ class BiliCrawler():
         self.URL_BASE = "https://wiki.biligame.com"
         self.raw = {}
         self.schema = {}
-        self.fetch_data()
 
     def fetch_data(self):
         # fetch 2 tables
+
         #self.fetch_skill_table()
         #self.transform_skill()
+        
         self.fetch_pet_table()
-        self.transform_pet()
+        #self.transform_pet()
         
         # fetch pet detail
-        #self.fetch_pet_detail()
+        self.raw['petskillsList'] = []
+        for rawPet in self.raw['petsTable']:
+            url = self.URL_BASE+rawPet[15]
+            rawKey = rawPet[0]
+            if rawKey > 3:
+                break
+            self.fetch_pet_detail(url, rawKey)
+            
+        self.transform_petskill()
 
+    def _request(self, url):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,en-US;q=0.9,en;q=0.8',
+            # 'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-GPC': '1',
+            'Priority': 'u=4',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache',
+        }
+        rk = requests.get(url, headers=headers)
+        html_doc = rk.text
+        print('request len:',len(html_doc))
+        soup = BeautifulSoup(html_doc, 'lxml')
+        if len(html_doc) < 20000:
+            return self._request(url)
+        else:
+            return soup
 
     """ Deprecated because of fetch_skill_table """
     def _get_skill_list(self):
@@ -51,9 +85,8 @@ class BiliCrawler():
         #  'damage_type', 'energy, 'damage', 'desp', 'version'
         #  'href']
         url = "https://wiki.biligame.com/rocom/%E6%8A%80%E8%83%BD%E7%AD%9B%E9%80%89"
-        rk = requests.get(url)
-        html_doc = rk.text
-        soup = BeautifulSoup(html_doc, 'lxml')
+        print("fetching data of skill table...")
+        soup = self._request(url)
         boxSoup = soup.find('table', id='CardSelectTr')
         skillsSoup = boxSoup.find_all('tr')[1:]
     
@@ -92,9 +125,8 @@ class BiliCrawler():
         # 'race_hp', 'race_spd', 'race_patk', 'race_satk', 'race_pdef', 'race_sdef', 'race_total', 'version',
         # 'href', 'data_region', 'data_rank']
         url = "https://wiki.biligame.com/rocom/%E7%B2%BE%E7%81%B5%E7%AD%9B%E9%80%89"
-        rk = requests.get(url)
-        html_doc = rk.text
-        soup = BeautifulSoup(html_doc, 'lxml')
+        print("fetching data of pet table...")
+        soup = self._request(url)
         boxSoup = soup.find('table', id='CardSelectTr')
         petsSoup = boxSoup.find_all('tr')[1:]
     
@@ -130,23 +162,50 @@ class BiliCrawler():
             ]
             pets.append(row)
         
-        self.raw['petsTable'] = pets
+        petsWithId = [[i + 1] + row for i, row in enumerate(pets)]
+        self.raw['petsTable'] = petsWithId
 
     def transform_pet(self):
         self.schema['bili_pet'] = {
             'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,ability TEXT NOT NULL,type1 TEXT NOT NULL,type2 TEXT,stage TEXT NOT NULL,form TEXT,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, icon_path TEXT NOT NULL, link TEXT NOT NULL, version TEXT)",
-            'dml' : "INSERT INTO bili_pet_base (icon_path, name, type1, type2, hid, ability, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form, stage) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'dml' : "INSERT INTO bili_pet_base (id, icon_path, name, type1, type2, hid, ability, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form, stage) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_pet_base",
             'data': [(r[0],r[1],r[2],r[3],r[4],
                       r[5],r[6],r[7],r[8],
                       r[9],r[10],r[11],r[12],
-                      r[13],r[14],r[15],r[16]) for r in self.raw['petsTable']],
+                      r[13],r[14],r[15],r[16],r[17]) for r in self.raw['petsTable']],
         }
-
         
-    def fetch_pet_detail(self):
-        pass
+    def fetch_pet_detail(self, url, pkey):
+        # pet detail list of
+        
+        print("fetching data of pet... :", url)
+        soup = self._request(url)
+        boxSoup = soup.find('div', class_='rocom_sprite_skill_tabBox')
+        petSkillsCategorySoup = boxSoup.find_all('div', class_='tabbertab')
 
+        allPetSkills = []
+        for petSkills in petSkillsCategorySoup:
+            categoryStr = petSkills.attrs['title']
+            skillBox = petSkills.find_all('div', class_='rocom_sprite_skill_box')
+            row = [(
+                pkey,
+                s.find('div', class_='rocom_sprite_skillName').text.strip(),
+                categoryStr,
+                s.find('div', class_='rocom_sprite_skill_level').text.strip()
+                 ) for s in skillBox]
+            allPetSkills.extend(row)
+        self.raw['petskillsList'].extend(allPetSkills)
+
+
+    def transform_petskill(self):
+        self.schema['bili_pets_skills'] = {
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pets_skills (pid INTEGER NOT NULL,skill_name TEXT NOT NULL,category TEXT NOT NULL, info TEXT)",
+            'dml' : "INSERT INTO bili_pets_skills (pid, skill_name, category, info) VALUES (?, ?, ?, ?)",
+            'clean': "DROP TABLE IF EXISTS bili_pets_skills",
+            'data': tuple(self.raw['petskillsList'])
+        }
+        
     
     def load_sqlite(self, path="rocom.db"):
         def batch_create_and_insert(cursor, schema):
@@ -179,12 +238,16 @@ class BiliCrawler():
             conn.close()
 
     def test(self):
+        self.fetch_data()
+        print("self.row info:")
         print(self.raw.keys())
         for k in self.raw.keys():
             print(f'{k} has {len(self.raw[k])} rows, first line:')
             if type(self.raw[k]) == type([]):
-                print(self.raw[k][:3])
+                print(self.raw[k][1])
 
+        print("self.schema info:")
+        print(self.schema.keys())
         # load_to_sqlite
         print('EXPORTED TO DATABASE')
         self.load_sqlite()
