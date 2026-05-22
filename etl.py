@@ -109,8 +109,8 @@ class ETLer():
 
     def transform_petbase(self):
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (pid INTEGER PRIMARY KEY,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER,hid INTEGER NOT NULL, egg TEXT,evolution TEXT)",
-            'dml' : "INSERT INTO pet_base (pid,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg TEXT,evolution TEXT)",
+            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_base",
             'data': [(r[0],r[1],r[2],r[3][0],r[3][1] if len(r[3])>1 else None,
                       r[4],r[5],r[6],str(r[7]),r[8],str(r[9]),
