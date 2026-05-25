@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 
 class ETLer():
@@ -187,10 +188,7 @@ class ETLer():
                             v["energy_cost"][0],
                             v["dam_para"][0],
                             v["skill_dam_type"],
-                            v["skill_feature"],
-                            v["damage_type"],
-                            v["contact_type"],
-                            v["skill_priority"],
+                            v["Skill_Type"], v["damage_type"],
                             v["target_type"]
                            ]
                     ret1.append(row)
@@ -207,20 +205,39 @@ class ETLer():
             return len(ret1) + len(ret2)
 
     def transform_skills(self):
+        def transform_skilltype(sktype, dmgtype):
+            if sktype == 1 and dmgtype == 2:
+                return 1
+            elif sktype == 1 and dmgtype == 3:
+                return 2
+            elif sktype == 2 and dmgtype == 1:
+                return 3
+            elif sktype == 3 and dmgtype == 1:
+                return 4
+            else:
+                return 0
+
+        def transform_desc(desc):
+            if desc.find('</>')>0:
+                #extracted_ids = re.findall(r'<desc_id=(\d+)>', text)
+                return re.sub(r'<desc_id=\d+>','', desc.replace('</>',''))
+            else:
+                return desc
+
         self.schema['skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,sk_feature INTEGER,concat_type INTEGER,skill_priority INTEGER,target_type INTEGER, version_id INTEGER)",
-            'dml' : "INSERT INTO skill (id,name,desc,energy,damage,damage_type,sk_feature,skill_type,concat_type,skill_priority,target_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,target_type INTEGER, version_id INTEGER)",
+            'dml' : "INSERT INTO skill (id,name,desc,energy,damage,damage_type,skill_type,target_type) VALUES (?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS skill",
-            'data': [(r[0],r[1],r[2],r[3],
-                      r[4],r[5],r[6],r[7],
-                      r[8],r[9],r[10]) for r in self.raw['skills']],
+            'data': [(r[0],r[1],transform_desc(r[2]),r[3],
+                      r[4],r[5],transform_skilltype(r[6],r[7]),
+                      r[8]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
             'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER, version_id INTEGER)",
             'dml' : "INSERT INTO ability (id,name,desc,target_type) VALUES (?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
-                      r[2],r[3]) for r in self.raw['abilities']],
+                      transform_desc(r[2]),r[3]) for r in self.raw['abilities']],
         }
 
     def extract_type_dict(self, fn1='TYPE_DICTIONARY', fn2='SKILL_COLOR_CONF'):
