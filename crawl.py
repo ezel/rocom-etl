@@ -130,8 +130,8 @@ class BiliCrawler():
 
     def transform_skill(self):
         self.schema['bili_skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, desc TEXT NOT NULL, skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL, damage INTEGER NOT NULL,icon_path TEXT NOT NULL,link TEXT NOT NULL, version TEXT, version_id INTEGER)",
-            'dml' : "INSERT INTO bili_skill (icon_path, name, damage_type, skill_type, energy, damage, desc, version, link) VALUES (?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, desc TEXT NOT NULL, skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL, damage INTEGER NOT NULL,res TEXT NOT NULL,link TEXT NOT NULL, version TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO bili_skill (res, name, damage_type, skill_type, energy, damage, desc, version, link) VALUES (?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_skill",
             'data': [(r[0],r[1],self.dic['type'].get(r[2]),self.dic['skill_type'].get(r[3]),
                       r[4],r[5],r[6],r[7],r[8]) for r in self.raw['skillsTable']],
@@ -193,8 +193,8 @@ class BiliCrawler():
                 return [name, None]
 
         self.schema['bili_pet'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,feature TEXT NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage_type INTEGER NOT NULL,form TEXT, form_type INTEGER,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, icon_path TEXT NOT NULL, link TEXT NOT NULL, version TEXT, version_id INTEGER)",
-            'dml' : "INSERT INTO bili_pet_base (id, icon_path, name, form, type1, type2, hid, feature, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form_type, stage_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS bili_pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL, name TEXT NOT NULL,feature TEXT NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage_type INTEGER NOT NULL,form TEXT, form_type INTEGER,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, res TEXT NOT NULL, link TEXT NOT NULL, version TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO bili_pet_base (id, res, name, form, type1, type2, hid, feature, race_hp, race_spe, race_patk, race_satk, race_pdef, race_sdef, race_sum, version, link, form_type, stage_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS bili_pet_base",
             'data': [(r[0],r[1],*extract_name(r[2]),
                       self.dic['type'].get(r[3]),self.dic['type'].get(r[4]),

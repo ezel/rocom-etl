@@ -120,6 +120,7 @@ class ETLer():
                             v.get("pictorial_book_id", None),#self.raw['pid_ri'][v['id']],
                             v.get("egg_group", None),
                             v.get("evolution_pet_id", None),
+                            v.get("JL_res", None),
                            ]
                     ret.append(row)
 
@@ -129,12 +130,13 @@ class ETLer():
 
     def transform_petbase(self):
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg TEXT,evolution TEXT, version_id INTEGER)",
-            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg TEXT,evolution TEXT, res TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution, res) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_base",
             'data': [(r[0],r[1],r[2],r[3][0],r[3][1] if len(r[3])>1 else None,
                       r[4],r[5],r[6],str(r[7]),r[8],str(r[9]),
-                      r[10],r[11],r[12],r[13], str(r[14]),str(r[15])) for r in self.raw['petbase']],
+                      r[10],r[11],r[12],r[13], str(r[14]),str(r[15]),
+                      r[16][r[16].rfind('.')+1:-1]) for r in self.raw['petbase']],
         }
 
     def extract_level_skills(self, fn='LEVEL_SKILL_CONF'):
@@ -208,13 +210,15 @@ class ETLer():
                             v["dam_para"][0],
                             v["skill_dam_type"],
                             v["Skill_Type"], v["damage_type"],
-                            v["target_type"]
+                            v["target_type"],
+                            v.get('icon')
                            ]
                     ret1.append(row)
 
                 elif v['id'] in self.filterIdx['abilities']:
                     row = [ v['id'], v['name'], v['desc'],
                             v["target_type"],
+                            v.get('icon')
                            ]
                     ret2.append(row)
 
@@ -244,19 +248,19 @@ class ETLer():
                 return desc
 
         self.schema['skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,target_type INTEGER, version_id INTEGER)",
-            'dml' : "INSERT INTO skill (id,name,desc,energy,damage,damage_type,skill_type,target_type) VALUES (?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,target_type INTEGER, res TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO skill (id,name,desc,energy,damage,damage_type,skill_type,target_type, res) VALUES (?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS skill",
             'data': [(r[0],r[1],transform_desc(r[2]),r[3],
                       r[4],r[5],transform_skilltype(r[6],r[7]),
-                      r[8]) for r in self.raw['skills']],
+                      r[8],r[9][r[9].rfind('.')+1:-1]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER, version_id INTEGER)",
-            'dml' : "INSERT INTO ability (id,name,desc,target_type) VALUES (?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER, res TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO ability (id,name,desc,target_type, res) VALUES (?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
-                      transform_desc(r[2]),r[3]) for r in self.raw['abilities']],
+                      transform_desc(r[2]),r[3],r[4][r[4].rfind('.')+1:-1]) for r in self.raw['abilities']],
         }
 
     def extract_type_dict(self, fn1='TYPE_DICTIONARY', fn2='SKILL_COLOR_CONF'):
