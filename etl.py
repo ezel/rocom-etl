@@ -15,8 +15,9 @@ class ETLer():
         # set self.raw['handbook_pets'] with ['id', 'name', 'include_petbase_id[]']
         # set self.filterIdx['handbook_pets_pids'] with pids[]
         self.extract_handbook_pets()
-        self.transform_handbook_pets()
+        self.extract_season_handbook_pets()
 
+        self.transform_handbook_pets()
         # extract available pets
         self.extract_petbase()
         self.transform_petbase()
@@ -32,7 +33,6 @@ class ETLer():
         self.extract_type_dict()
         self.transform_type_dict()
         
-
     def extract_handbook_pets(self, fn='PET_HANDBOOK'):
         with open(self.root+fn+'.json') as f:
             rows = json.loads(f.read())['RocoDataRows']
@@ -61,9 +61,28 @@ class ETLer():
                 ret.append(row)
 
             self.raw['handbook_pets'] = ret
-            self.raw['pid_ri'] = pet_ri
+            #self.raw['pid_ri'] = pet_ri
             self.filterIdx['handbook_pets_pids'] = list(filter_ret_set)
             return len(ret)
+
+    def extract_season_handbook_pets(self, fn='SEASON_HANDBOOK_CONF'):
+        with open(self.root+fn+'.json') as f:
+            rows = json.loads(f.read())['RocoDataRows']
+
+            # init result variables
+            ret = []
+            filter_ret_set = set()
+
+            for k, v in rows.items():
+                # generate pet_ids
+                flat_pids = v['season_new_pet_base_id']
+                for pid in flat_pids:
+                    filter_ret_set.add(pid)
+                    ret.append(1)
+
+            self.filterIdx['handbook_pets_pids'].extend(list(filter_ret_set))
+            return len(ret)
+
 
     def transform_handbook_pets(self):
         self.schema['pet_handbook'] = {
@@ -98,7 +117,7 @@ class ETLer():
                             v.get("spe_defence_race", 0),
                             v.get("speed_race", 0),
                             v.get("SUM_race", 0),
-                            self.raw['pid_ri'][v['id']],
+                            v.get("pictorial_book_id", None),#self.raw['pid_ri'][v['id']],
                             v.get("egg_group", None),
                             v.get("evolution_pet_id", None),
                            ]
