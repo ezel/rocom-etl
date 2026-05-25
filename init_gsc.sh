@@ -1,5 +1,8 @@
 rm -rf rat/
 git clone --filter=blob:none --no-checkout https://github.com/aoe-top/rocom.aoe.top.git rat
+
+if [ -d rat ]; then
+
 cd rat
 git sparse-checkout init --no-cone
 #git sparse-checkout set public/data/tables
@@ -10,5 +13,9 @@ git sparse-checkout add /public/data/BinData/PETBASE_CONF.json
 git sparse-checkout add /public/data/BinData/SKILL_CONF.json
 git sparse-checkout add /public/data/BinData/TYPE_DICTIONARY.json
 git sparse-checkout add /public/data/BinData/SKILL_COLOR_CONF.json
-#git sparse-checkout add public/assets/webp
 git checkout main
+
+else
+echo "Project rat not cloned, stopped."
+exit 1
+fi
