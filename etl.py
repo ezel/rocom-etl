@@ -78,19 +78,28 @@ class ETLer():
                 flat_pids = v['season_new_pet_base_id']
                 for pid in flat_pids:
                     filter_ret_set.add(pid)
-                    ret.append(1)
+                    ret.append([pid, v['id']])
 
             self.filterIdx['handbook_pets_pids'].extend(list(filter_ret_set))
+            self.raw['handbook_season'] = ret
             return len(ret)
 
 
     def transform_handbook_pets(self):
         self.schema['pet_handbook'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_handbook (hid INTEGER PRIMARY KEY,name TEXT NOT NULL,forms_count INTEGER, pid_raw TEXT)",
-            'dml' : "INSERT INTO pet_handbook (hid,name,forms_count,pid_raw) VALUES (?, ?, ?, ?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_handbook (id INTEGER PRIMARY KEY,name TEXT NOT NULL,forms_count INTEGER, pid_raw TEXT)",
+            'dml' : "INSERT INTO pet_handbook (id,name,forms_count,pid_raw) VALUES (?, ?, ?, ?)",
             'clean': "DROP TABLE IF EXISTS pet_handbook",
             'data': [(r[0], r[1], r[2], str(r[3])) for r in self.raw['handbook_pets']]
         }
+
+        self.schema['season_handbook'] = {
+            'ddl' : "CREATE TABLE IF NOT EXISTS season_handbook (id INTEGER NOT NULL,name TEXT,pid INTEGER NOT NULL UNIQUE)",
+            'dml' : "INSERT INTO season_handbook (id,pid) VALUES (?,?)",
+            'clean': "DROP TABLE IF EXISTS season_handbook",
+            'data': [(r[1], r[0]) for r in self.raw['handbook_season']]
+        }
+
         
     def extract_petbase(self, fn='PETBASE_CONF'):
         with open(self.root+fn+'.json') as f:
