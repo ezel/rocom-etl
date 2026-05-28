@@ -138,13 +138,25 @@ class ETLer():
             return len(ret)
 
     def transform_petbase(self):
+        def split_array(src):
+            if src is None:
+                return [None, None]
+            elif len(src) == 1:
+                return [src[0], None]
+            elif len(src) > 1:
+                return [src[0], src[1]]
+
+        
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg TEXT,evolution TEXT, res TEXT, version_id INTEGER)",
-            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg,evolution, res) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg1 INTEGER, egg2 INTEGER,evolution TEXT, res TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg1,egg2,evolution, res) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_base",
-            'data': [(r[0],r[1],r[2],r[3][0],r[3][1] if len(r[3])>1 else None,
+            'data': [(r[0],r[1],r[2],
+                      *split_array(r[3]),
                       r[4],r[5],r[6],str(r[7]),r[8],str(r[9]),
-                      r[10],r[11],r[12],r[13], str(r[14]),str(r[15]),
+                      r[10],r[11],r[12],r[13],
+                      *split_array(r[14]),
+                      str(r[15]),
                       r[16][r[16].rfind('.')+1:-1]) for r in self.raw['petbase']],
         }
 
