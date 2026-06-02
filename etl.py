@@ -1,3 +1,4 @@
+
 import json
 import re
 import sqlite3
@@ -87,7 +88,7 @@ class ETLer():
 
     def transform_handbook_pets(self):
         self.schema['pet_handbook'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_handbook (id INTEGER PRIMARY KEY,name TEXT NOT NULL,forms_count INTEGER, pid_raw TEXT)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_handbook (id INTEGER NOT NULL PRIMARY KEY,name TEXT NOT NULL,forms_count INTEGER, pid_raw TEXT)",
             'dml' : "INSERT INTO pet_handbook (id,name,forms_count,pid_raw) VALUES (?, ?, ?, ?)",
             'clean': "DROP TABLE IF EXISTS pet_handbook",
             'data': [(r[0], r[1], r[2], str(r[3])) for r in self.raw['handbook_pets']]
@@ -148,7 +149,7 @@ class ETLer():
 
         
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER,race_patk INTEGER,race_satk INTEGER,race_pdef INTEGER,race_sdef INTEGER,race_spe INTEGER,race_sum INTEGER, egg1 INTEGER, egg2 INTEGER,evolution TEXT, res TEXT, version_id INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER NOT NULL PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, egg1 INTEGER, egg2 INTEGER,evolution TEXT, res TEXT NOT NULL, version_id INTEGER)",
             'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg1,egg2,evolution, res) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_base",
             'data': [(r[0],r[1],r[2],
@@ -269,7 +270,7 @@ class ETLer():
                 return desc
 
         self.schema['skill'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,target_type INTEGER, res TEXT, version_id INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,target_type INTEGER, res TEXT NOT NULL, version_id INTEGER)",
             'dml' : "INSERT INTO skill (id,name,desc,energy,damage,damage_type,skill_type,target_type, res) VALUES (?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS skill",
             'data': [(r[0],r[1],transform_desc(r[2]),r[3],
@@ -277,7 +278,7 @@ class ETLer():
                       r[8],r[9][r[9].rfind('.')+1:-1]) for r in self.raw['skills']],
         }
         self.schema['ability'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER, res TEXT, version_id INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS ability (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,target_type INTEGER, res TEXT NOT NULL, version_id INTEGER)",
             'dml' : "INSERT INTO ability (id,name,desc,target_type, res) VALUES (?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
@@ -310,7 +311,7 @@ class ETLer():
 
     def transform_type_dict(self):
         self.schema['dict_type'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS dict_type (cid INTEGER PRIMARY KEY,name TEXT NOT NULL,sname TEXT NOT NULL, ebc TEXT, rfc TEXT,scolor TEXT, plc TEXT)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS dict_type (cid INTEGER NOT NULL PRIMARY KEY,name TEXT NOT NULL,sname TEXT NOT NULL, ebc TEXT, rfc TEXT,scolor TEXT, plc TEXT)",
             'dml' : "INSERT INTO dict_type (cid, name, sname, ebc, rfc, scolor, plc) VALUES (?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS dict_type",
             'data': [(r[0],r[1],r[2],r[3],r[4],
