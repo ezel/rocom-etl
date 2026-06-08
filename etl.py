@@ -159,7 +159,7 @@ class ETLer():
                       (r[6]+r[7]+r[8]+r[9]+r[10]+r[11]),
                       r[13],
                       *split_array(r[14]),
-                      str(r[15]),
+                      r[15],
                       r[16][r[16].rfind('.')+1:-1],
                       r[17]) for r in self.raw['petbase']],
         }
