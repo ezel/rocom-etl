@@ -194,8 +194,7 @@ class ETLer():
                     [filter_ret_set.add(x) for x in rBlood]
 
                     row = [v['id'], rLevel, rMachine, rBlood]
-                    
-                ret.append(row)
+                    ret.append(row)
 
             self.raw['level_skill'] = ret
             self.filterIdx['skills'] = list(filter_ret_set)
@@ -213,7 +212,7 @@ class ETLer():
                 data.append([id, r[3][i], 3, i])
             
         self.schema['pets_skills'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pets_skills (pid INTEGER NOT NULL,skid INTEGER NOT NULL,type INTEGER NOT NULL, info INTEGER, version_id INTEGER)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pets_skills (pid INTEGER NOT NULL,skid INTEGER NOT NULL,type INTEGER NOT NULL, info INTEGER, version_id INTEGER, PRIMARY KEY(pid, skid, type))",
             'dml' : "INSERT INTO pets_skills (pid, skid, type, info) VALUES (?, ?, ?, ?)",
             'clean': "DROP TABLE IF EXISTS pets_skills",
             'data': tuple(data)
