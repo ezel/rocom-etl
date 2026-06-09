@@ -206,7 +206,7 @@ class ETLer():
                 combine = []
 
         self.schema['pet_evolution'] = {
-            'ddl': "CREATE TABLE IF NOT EXISTS pet_evolution (root INTEGER NOT NULL, path TEXT NOT NULL, version_id INTEGER)",
+            'ddl': "CREATE TABLE IF NOT EXISTS pet_evolution (root INTEGER NOT NULL, path TEXT NOT NULL, version_id INTEGER, PRIMARY KEY(root, path))",
             'dml': "INSERT INTO pet_evolution (root, path) VALUES (?,?)",
             'clean': "DROP TABLE IF EXISTS pet_evolution",
             'data': data
