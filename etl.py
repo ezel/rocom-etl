@@ -22,6 +22,7 @@ class ETLer():
         # extract available pets
         self.extract_petbase()
         self.transform_petbase()
+        self.transform_pet_evolution()
         
         # extract available skills
         self.extract_level_skills()
@@ -159,9 +160,56 @@ class ETLer():
                       (r[6]+r[7]+r[8]+r[9]+r[10]+r[11]),
                       r[13],
                       *split_array(r[14]),
-                      r[15],
+                      r[15] if r[15] is None else str(r[15]),
                       r[16][r[16].rfind('.')+1:-1],
                       r[17]) for r in self.raw['petbase']],
+        }
+
+    def transform_pet_evolution(self):
+        adj = {}
+        for r in self.raw['petbase']:
+            if r[15] is not None:
+                adj[r[0]]=r[15]
+        #print(adj)
+
+        # dfs
+        results = []
+        visited = {}
+        def dfs(start, result=""):
+            if start in visited:
+                return
+            else:
+                result += str(start) + "/"
+                visited[start] = True
+                if start not in adj:
+                    results.append(result.split('/')[:-1])
+                else:
+                    for end in adj[start]:
+                        dfs(end, result)
+
+        for k in adj:
+            dfs(k)
+
+        # cut the path
+        results.sort()
+        data = []
+        current_prefix = ""
+        combine = []
+        for i in range(len(results)):
+            r = results[i]
+            combine.append(r[-1])
+            # compare with next row
+            if (i+1<len(results) and str(r[:-1]) == str(results[i+1][:-1])):
+                continue
+            else:
+                data.append((r[0], '/'.join(r[:-1])+'/'+','.join(combine),))
+                combine = []
+
+        self.schema['pet_evolution'] = {
+            'ddl': "CREATE TABLE IF NOT EXISTS pet_evolution (root INTEGER NOT NULL, path TEXT NOT NULL, version_id INTEGER)",
+            'dml': "INSERT INTO pet_evolution (root, path) VALUES (?,?)",
+            'clean': "DROP TABLE IF EXISTS pet_evolution",
+            'data': data
         }
 
     def extract_level_skills(self, fn='LEVEL_SKILL_CONF'):
