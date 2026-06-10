@@ -132,7 +132,9 @@ class ETLer():
                             v.get("egg_group", None),
                             v.get("evolution_pet_id", None),
                             v.get("JL_res", None),
-                            v.get("wish_number", 0)
+                            v.get("wish_number", 0),
+                            v.get("is_boss", 0),
+                            v.get("bosspetbase_id", None)
                            ]
                     ret.append(row)
 
@@ -148,10 +150,11 @@ class ETLer():
                 return [src[0], None]
             elif len(src) > 1:
                 return [src[0], src[1]]
+        
 
         self.schema['pet_base'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER NOT NULL PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER,race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, wish INTEGER NOT NULL, egg1 INTEGER, egg2 INTEGER,evolution TEXT, res TEXT NOT NULL, version_id INTEGER)",
-            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg1,egg2,evolution, res, wish) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS pet_base (id INTEGER NOT NULL PRIMARY KEY,hid INTEGER NOT NULL,name TEXT NOT NULL,feature INTEGER NOT NULL,type1 INTEGER NOT NULL,type2 INTEGER,stage INTEGER NOT NULL,form TEXT,form_type INTEGER, bid INTEGER, race_hp INTEGER NOT NULL,race_patk INTEGER NOT NULL,race_satk INTEGER NOT NULL,race_pdef INTEGER NOT NULL,race_sdef INTEGER NOT NULL,race_spe INTEGER NOT NULL,race_sum INTEGER NOT NULL, wish INTEGER NOT NULL, egg1 INTEGER, egg2 INTEGER,evolution TEXT, res TEXT NOT NULL, version_id INTEGER)",
+            'dml' : "INSERT INTO pet_base (id,name,feature,type1,type2,stage,form,race_hp,race_patk,race_satk,race_pdef,race_sdef,race_spe,race_sum,hid, egg1,egg2,evolution, res, wish, form_type, bid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_base",
             'data': [(r[0],r[1],r[2],
                       *split_array(r[3]),
@@ -160,9 +163,12 @@ class ETLer():
                       (r[6]+r[7]+r[8]+r[9]+r[10]+r[11]),
                       r[13],
                       *split_array(r[14]),
-                      r[15] if r[15] is None else str(r[15]),
-                      r[16][r[16].rfind('.')+1:-1],
-                      r[17]) for r in self.raw['petbase']],
+                      r[15] if r[15] is None else str(r[15]), #evo
+                      r[16][r[16].rfind('.')+1:-1], #res
+                      r[17], # wish
+                      3 if r[18] else (2 if r[5] else 1),
+                      r[19] if (r[15] is None) else None, # boss_id
+                      ) for r in self.raw['petbase']],
         }
 
     def transform_pet_evolution(self):
@@ -202,12 +208,21 @@ class ETLer():
             if (i+1<len(results) and str(r[:-1]) == str(results[i+1][:-1])):
                 continue
             else:
-                data.append((r[0], '/'.join(r[:-1])+'/'+','.join(combine),))
+                fullPath = '/'.join(r[:-1])+'/'+','.join(combine)
+                stages = fullPath.split('/')
+                data.append((r[0],
+                             fullPath,
+                             stages[0],
+                             stages[1] if 1 < len(stages) else None,
+                             stages[2] if 2 < len(stages) else None
+                             ))
                 combine = []
 
+        #print([(x[1], x[1].count('/'), x[1].count(','),) for x in data])
+        
         self.schema['pet_evolution'] = {
-            'ddl': "CREATE TABLE IF NOT EXISTS pet_evolution (root INTEGER NOT NULL, path TEXT NOT NULL, version_id INTEGER, PRIMARY KEY(root, path))",
-            'dml': "INSERT INTO pet_evolution (root, path) VALUES (?,?)",
+            'ddl': "CREATE TABLE IF NOT EXISTS pet_evolution (root INTEGER NOT NULL, path TEXT NOT NULL, stage1 TEXT NOT NULL, stage2 TEXT, stage3 TEXT, version_id INTEGER, PRIMARY KEY(root, path))",
+            'dml': "INSERT INTO pet_evolution (root, path, stage1, stage2, stage3) VALUES (?,?,?,?,?)",
             'clean': "DROP TABLE IF EXISTS pet_evolution",
             'data': data
         }
@@ -251,6 +266,7 @@ class ETLer():
 
     def transform_level_skills(self):
         data = []
+        typeMap = [2,3,4,5,6,8,9,10,11,12,13,14,15,16,17,18,19,20]
         for r in self.raw['level_skill']:
             id = r[0]
             for x in r[1]:
@@ -258,7 +274,7 @@ class ETLer():
             for x in r[2]:
                 data.append([id, x[0], 2, None])
             for i in range(len(r[3])):
-                data.append([id, r[3][i], 3, i])
+                data.append([id, r[3][i], 3, typeMap[i]])
             
         self.schema['pets_skills'] = {
             'ddl' : "CREATE TABLE IF NOT EXISTS pets_skills (pid INTEGER NOT NULL,skid INTEGER NOT NULL,type INTEGER NOT NULL, info INTEGER, version_id INTEGER, PRIMARY KEY(pid, skid, type))",
