@@ -256,7 +256,7 @@ class ETLer():
             for x in r[1]:
                 data.append([id, x[0], 1, x[1]])
             for x in r[2]:
-                data.append([id, x[0], 2, x[1]])
+                data.append([id, x[0], 2, None])
             for i in range(len(r[3])):
                 data.append([id, r[3][i], 3, i])
             
