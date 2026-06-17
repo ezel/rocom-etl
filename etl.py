@@ -18,6 +18,8 @@ class ETLer():
         self.extract_handbook_pets()
         self.extract_season_handbook_pets()
 
+        self.filterIdx['handbook_pets_pids'].append(3620)
+
         self.transform_handbook_pets()
         # extract available pets
         self.extract_petbase()
