@@ -25,6 +25,7 @@ def load_sqlite(dml, data, path="rocom.db"):
 
 e = ETLer(root=FILE_PATH)
 #e.export_color_html()
+e.doETL(more_pets=[3620])
 e.load_sqlite()
 
 load_sqlite(

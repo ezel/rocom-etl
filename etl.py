@@ -9,16 +9,17 @@ class ETLer():
         self.raw = {}
         self.filterIdx = {}
         self.schema = {}
-        self.doETL()
+        #self.doETL()
 
-    def doETL(self):
+    def doETL(self, more_pets=[]):
         # extract handbook pets
         # set self.raw['handbook_pets'] with ['id', 'name', 'include_petbase_id[]']
         # set self.filterIdx['handbook_pets_pids'] with pids[]
         self.extract_handbook_pets()
         self.extract_season_handbook_pets()
 
-        self.filterIdx['handbook_pets_pids'].append(3620)
+        if len(more_pets) > 0:
+            self.filterIdx['handbook_pets_pids'].extend(more_pets)
 
         self.transform_handbook_pets()
         # extract available pets
