@@ -103,7 +103,7 @@ class ETLer():
         }
 
         self.schema['season_handbook'] = {
-            'ddl' : "CREATE TABLE IF NOT EXISTS season_handbook (id INTEGER NOT NULL,name TEXT,pid INTEGER NOT NULL UNIQUE)",
+            'ddl' : "CREATE TABLE IF NOT EXISTS season_handbook (id INTEGER NOT NULL,name TEXT,pid INTEGER NOT NULL PRIMARY KEY)",
             'dml' : "INSERT INTO season_handbook (id,pid) VALUES (?,?)",
             'clean': "DROP TABLE IF EXISTS season_handbook",
             'data': [(r[1], r[0]) for r in self.raw['handbook_season']]
