@@ -13,6 +13,7 @@ git sparse-checkout add /public/data/BinData/PETBASE_CONF.json
 git sparse-checkout add /public/data/BinData/SKILL_CONF.json
 git sparse-checkout add /public/data/BinData/TYPE_DICTIONARY.json
 git sparse-checkout add /public/data/BinData/SKILL_COLOR_CONF.json
+git sparse-checkout add /public/data/BinData/DESC_NOTE_CONF.json
 git checkout main
 
 else

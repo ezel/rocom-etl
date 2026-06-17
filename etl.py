@@ -31,6 +31,10 @@ class ETLer():
         self.extract_skills()
         self.transform_skills()
 
+        # extract desc notes
+        self.extract_skill_descs()
+        self.transform_skill_descs()
+
         # extract dictionary
         self.extract_type_dict()
         self.transform_type_dict()
@@ -328,12 +332,15 @@ class ETLer():
             else:
                 return 0
 
+        skill_descs_set = set()
         def transform_desc(desc):
+
             if desc.find('</>')>0:
-                #extracted_ids = re.findall(r'<desc_id=(\d+)>', text)
-                return re.sub(r'<desc_id=\d+>','', desc.replace('</>',''))
-            else:
-                return desc
+                extracted_ids = re.findall(r'<desc_id=(\d+)>(.*?)</>', desc)
+                skill_descs_set.update(extracted_ids)
+                #return re.sub(r'<desc_id=\d+>','', desc.replace('</>',''))
+
+            return desc
 
         self.schema['skill'] = {
             'ddl' : "CREATE TABLE IF NOT EXISTS skill (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,desc TEXT NOT NULL,skill_type INTEGER NOT NULL, damage_type INTEGER NOT NULL, energy INTEGER NOT NULL,damage INTEGER,target_type INTEGER, res TEXT NOT NULL, version_id INTEGER)",
@@ -349,6 +356,43 @@ class ETLer():
             'clean': "DROP TABLE IF EXISTS ability",
             'data': [(r[0],r[1],
                       transform_desc(r[2]),r[3],r[4][r[4].rfind('.')+1:-1]) for r in self.raw['abilities']],
+        }
+        self.filterIdx['descs'] = tuple(skill_descs_set)
+
+    def extract_skill_descs(self, fn='DESC_NOTE_CONF'):
+        with open(self.root+fn+'.json') as f:
+            rows = json.loads(f.read())['RocoDataRows']
+
+            ret1 = []
+            filterDict = dict(self.filterIdx['descs'])
+            reverseDict = {v: k for k, v in filterDict.items()}
+            missingDesc = {}
+            for k, v in rows.items():
+                if str(v['id']) in filterDict.keys():
+                    if v['note'] == filterDict[str(v['id'])]:
+                        row = [ v['id'], v['note'], v['desc']]
+                        ret1.append(row)
+                    else:
+                        missingDesc[filterDict[str(v['id'])]] = v['id']
+
+            # find missing desc
+            for k, v in rows.items():
+                if v['note'] in missingDesc.keys():
+                    print('find missing:', v['note'], "on", v['id'])
+                    row = [ reverseDict[v['note']], v['note'], v['desc']]
+                    del missingDesc[v['note']]
+                    ret1.append(row)
+
+            self.raw['skill_descs'] = ret1
+            print(missingDesc)
+            return len(ret1)
+
+    def transform_skill_descs(self):
+        self.schema['skill_descs'] = {
+            'ddl' : "CREATE TABLE IF NOT EXISTS skill_descs (id INTEGER NOT NULL PRIMARY KEY,name TEXT NOT NULL, desc TEXT, version_id INTEGER)",
+            'dml' : "INSERT INTO skill_descs (id, name, desc) VALUES (?,?,?)",
+            'clean': "DROP TABLE IF EXISTS skill_descs",
+            'data': tuple(self.raw['skill_descs'])
         }
 
     def extract_type_dict(self, fn1='TYPE_DICTIONARY', fn2='SKILL_COLOR_CONF'):
