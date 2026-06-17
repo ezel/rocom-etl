@@ -1,6 +1,6 @@
-
 import json
 import re
+import regex
 import sqlite3
 
 class ETLer():
@@ -295,8 +295,12 @@ class ETLer():
             ret1 = []
             ret2 = []
             
+            pattern = regex.compile(r'[\p{Cc}\p{Cf}]')
             for k, v in rows.items():
                 if v['id'] in self.filterIdx['skills']:
+                    if pattern.search(v['desc']):
+                        #print(v['name'], repr(v['desc']))
+                        v['desc'] = regex.sub(r'[\p{Cc}\p{Cf}]', '', v['desc'])
                     row = [ v['id'], v['name'], v['desc'],
                             v["energy_cost"][0],
                             v["dam_para"][0],
@@ -339,7 +343,6 @@ class ETLer():
                 extracted_ids = re.findall(r'<desc_id=(\d+)>(.*?)</>', desc)
                 skill_descs_set.update(extracted_ids)
                 #return re.sub(r'<desc_id=\d+>','', desc.replace('</>',''))
-
             return desc
 
         self.schema['skill'] = {
